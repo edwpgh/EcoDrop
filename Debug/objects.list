@@ -1,6 +1,5 @@
 "./Core/Src/FLASH_PAGE.o"
-"./Core/Src/ask.o"
-"./Core/Src/ask_hal_stm32_none.o"
+"./Core/Src/ask_rt433.o"
 "./Core/Src/main.o"
 "./Core/Src/stm32f0xx_hal_msp.o"
 "./Core/Src/stm32f0xx_it.o"

@@ -6,8 +6,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../Core/Src/FLASH_PAGE.c \
-../Core/Src/ask.c \
-../Core/Src/ask_hal_stm32_none.c \
+../Core/Src/ask_rt433.c \
 ../Core/Src/main.c \
 ../Core/Src/stm32f0xx_hal_msp.c \
 ../Core/Src/stm32f0xx_it.c \
@@ -17,8 +16,7 @@ C_SRCS += \
 
 OBJS += \
 ./Core/Src/FLASH_PAGE.o \
-./Core/Src/ask.o \
-./Core/Src/ask_hal_stm32_none.o \
+./Core/Src/ask_rt433.o \
 ./Core/Src/main.o \
 ./Core/Src/stm32f0xx_hal_msp.o \
 ./Core/Src/stm32f0xx_it.o \
@@ -28,8 +26,7 @@ OBJS += \
 
 C_DEPS += \
 ./Core/Src/FLASH_PAGE.d \
-./Core/Src/ask.d \
-./Core/Src/ask_hal_stm32_none.d \
+./Core/Src/ask_rt433.d \
 ./Core/Src/main.d \
 ./Core/Src/stm32f0xx_hal_msp.d \
 ./Core/Src/stm32f0xx_it.d \
@@ -45,7 +42,7 @@ Core/Src/%.o Core/Src/%.su Core/Src/%.cyclo: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/FLASH_PAGE.cyclo ./Core/Src/FLASH_PAGE.d ./Core/Src/FLASH_PAGE.o ./Core/Src/FLASH_PAGE.su ./Core/Src/ask.cyclo ./Core/Src/ask.d ./Core/Src/ask.o ./Core/Src/ask.su ./Core/Src/ask_hal_stm32_none.cyclo ./Core/Src/ask_hal_stm32_none.d ./Core/Src/ask_hal_stm32_none.o ./Core/Src/ask_hal_stm32_none.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/stm32f0xx_hal_msp.cyclo ./Core/Src/stm32f0xx_hal_msp.d ./Core/Src/stm32f0xx_hal_msp.o ./Core/Src/stm32f0xx_hal_msp.su ./Core/Src/stm32f0xx_it.cyclo ./Core/Src/stm32f0xx_it.d ./Core/Src/stm32f0xx_it.o ./Core/Src/stm32f0xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32f0xx.cyclo ./Core/Src/system_stm32f0xx.d ./Core/Src/system_stm32f0xx.o ./Core/Src/system_stm32f0xx.su
+	-$(RM) ./Core/Src/FLASH_PAGE.cyclo ./Core/Src/FLASH_PAGE.d ./Core/Src/FLASH_PAGE.o ./Core/Src/FLASH_PAGE.su ./Core/Src/ask_rt433.cyclo ./Core/Src/ask_rt433.d ./Core/Src/ask_rt433.o ./Core/Src/ask_rt433.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/stm32f0xx_hal_msp.cyclo ./Core/Src/stm32f0xx_hal_msp.d ./Core/Src/stm32f0xx_hal_msp.o ./Core/Src/stm32f0xx_hal_msp.su ./Core/Src/stm32f0xx_it.cyclo ./Core/Src/stm32f0xx_it.d ./Core/Src/stm32f0xx_it.o ./Core/Src/stm32f0xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32f0xx.cyclo ./Core/Src/system_stm32f0xx.d ./Core/Src/system_stm32f0xx.o ./Core/Src/system_stm32f0xx.su
 
 .PHONY: clean-Core-2f-Src
 

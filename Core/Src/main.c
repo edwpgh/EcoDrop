@@ -21,8 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "ask.h"
-#include "ask_hal.h"
+#include <ask_rt433.h>
 #include "FLASH_PAGE.h"
 /* USER CODE END Includes */
 
@@ -52,6 +51,14 @@ uint8_t code[5];
 uint8_t timer = 0;
 uint8_t hold_timer_cnt = 0, not_hold_timer_cnt = 0;
 uint8_t Test;
+uint8_t coin;
+uint8_t remote_is_hold;
+uint8_t remote_start_hold;
+uint8_t a_hold;
+uint8_t b_hold;
+uint8_t c_hold;
+
+
 
 
 
@@ -92,53 +99,70 @@ static void MX_TIM14_Init(void);
 //		ask_pinchange_callback(&ask433);
 //	}
 //}
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
+//{
+//    if (GPIO_PIN == RX433_PIN)
+//    {
+//        ask_pinchange_callback(&rf433);
+//    }
+//}
+
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+//{
+//    if (GPIO_Pin == ASK_IN_SIG_Pin)
+//    {
+//        ask_callBackPinChange(&rf433);
+//    }
+//}
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    if (GPIO_PIN == RX433_PIN)
-    {
-        ask_pinchange_callback(&rf433);
-    }
+	 if (GPIO_Pin == ASK_IN_SIG_Pin)
+	    {
+//	        Test = !Test;
+
+	        ask_callBackPinChange(&rf433);
+
+//	        if (rf433.index > 0)
+//	        {
+//	            Test = 1;
+//	        }
+	    }
 }
-
-
 
 
 void check_And_Learn_Ask()
 {
 
-
+	ask_loop(&rf433);
 	if (ask_available(&rf433))
 	{
 		Test = 1;
-		ask_read_bytes(&rf433, code);
+		ask_read(&rf433, code, NULL, NULL);
 
-//		if(ask_code_in_flash == (code[0] | (code[1] << 8) | (code[2] << 16)))
-//		{
-//			HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, 1);
-//			coin = 1;
-			HAL_Delay(5);
-//		}
-//		code[0] = 0;
-//		code[1] = 0;
-//		code[2] = 0;
-		ask_read_bytes(&rf433, code);
-		if(ask_code_in_flash == (code[0] | (code[1] << 8) | (0x00 << 16)))
+		if((ask_code_in_flash & 0x0000FFFF) == (code[0] | (code[1] << 8)))
 		{
 			HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, 1);
-			remote_pressed = true;
-			HAL_Delay(5);
-		}
-		else
-		{
-			remote_pressed = false;
-			HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, 0);
+			if((code[2] & 0x0F) == 0x01)	// A
+				coin = 1;
+			if(ask_isHold(&rf433))
+			{
+				HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, 1);
+				remote_is_hold = 1;
+				remote_start_hold = HAL_GetTick();
+				if((code[2] & 0x0F) == 0x01)	// A
+					a_hold = 1;
+				else if((code[2] & 0x0F) == 0x02)	// B
+					b_hold = 1;
+				else if((code[2] & 0x0F) == 0x04)	// C
+					c_hold = 1;
+			}
 		}
 
 	}
 	else
 	{
 		HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, 0);
-		Test = 0;
+
 	}
 
 	if(ask_learning_state == idle)	// Learn Procedure ...
@@ -266,7 +290,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim14);
   HAL_TIM_Base_Start(&htim6);
-  ask_init(&rf433);
+  ask_init(&rf433,ASK_IN_SIG_GPIO_Port,ASK_IN_SIG_Pin);
+  Flash_Read_Data(0x08008000, &ask_code_in_flash, 1);
 
   /* USER CODE END 2 */
 
@@ -417,7 +442,7 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 47;
+  htim6.Init.Prescaler = 479;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim6.Init.Period = 65535;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
