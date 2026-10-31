@@ -48,16 +48,45 @@ uint32_t ask_code_in_flash;
 ask_t rf433;
 uint8_t code[5];
 
+uint8_t Test = 0; /////// For Debug
+
+typedef enum{
+	waiting_For_Start,
+	button_Clicked,
+	playing_Game,
+	difficulty_setting,
+	turn_setting,
+}state_Of_Game_t;
+state_Of_Game_t game_State = waiting_For_Start;
+
 uint8_t timer = 0;
 uint8_t hold_timer_cnt = 0, not_hold_timer_cnt = 0;
-uint8_t Test;
+uint8_t Test,Test_B,Test_C;
 uint8_t coin;
 uint8_t remote_is_hold;
 uint8_t remote_start_hold;
 uint8_t a_hold;
 uint8_t b_hold;
 uint8_t c_hold;
+uint8_t a_hold_timer_cnt = 0;
+uint8_t b_hold_timer_cnt = 0;
+uint8_t c_hold_timer_cnt = 0;
+uint8_t A_is_pressed;
 
+uint32_t remote_duration_hold = 0 ;
+
+uint32_t a_hold_start_time = 0;
+uint8_t a_hold_executed = 0;
+
+
+uint8_t  a_pressed = 0, a_done = 0;
+uint32_t a_start = 0, a_last = 0;
+
+uint8_t  b_pressed = 0, b_done = 0;
+uint32_t b_start = 0, b_last = 0;
+
+uint8_t  c_pressed = 0, c_done = 0;
+uint32_t c_start = 0, c_last = 0;
 
 
 
@@ -136,33 +165,47 @@ void check_And_Learn_Ask()
 	ask_loop(&rf433);
 	if (ask_available(&rf433))
 	{
-		Test = 1;
-		ask_read(&rf433, code, NULL, NULL);
 
+		ask_read(&rf433, code, NULL, NULL);
 		if((ask_code_in_flash & 0x0000FFFF) == (code[0] | (code[1] << 8)))
 		{
-			HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, 1);
-			if((code[2] & 0x0F) == 0x01)	// A
-				coin = 1;
-			if(ask_isHold(&rf433))
-			{
-				HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, 1);
-				remote_is_hold = 1;
-				remote_start_hold = HAL_GetTick();
-				if((code[2] & 0x0F) == 0x01)	// A
-					a_hold = 1;
-				else if((code[2] & 0x0F) == 0x02)	// B
-					b_hold = 1;
-				else if((code[2] & 0x0F) == 0x04)	// C
-					c_hold = 1;
-			}
-		}
+		    HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, 1);
 
+		    if((code[2] & 0x0F) == 0x01)    // A
+		    {
+		        coin = 1;
+		        if(a_pressed == 0)
+		        {
+		            a_pressed = 1;
+		            a_start = HAL_GetTick();
+		        }
+		        a_last = HAL_GetTick();
+		    }
+		    else if((code[2] & 0x0F) == 0x02)    // B
+		    {
+		        if(b_pressed == 0)
+		        {
+		            b_pressed = 1;
+		            b_start = HAL_GetTick();
+		        }
+		        b_last = HAL_GetTick();
+		    }
+		    else if((code[2] & 0x0F) == 0x04)    // C
+		    {
+		        if(c_pressed == 0)
+		        {
+		            c_pressed = 1;
+		            c_start = HAL_GetTick();
+		        }
+		        c_last = HAL_GetTick();
+		    }
+		}
 	}
+
+
 	else
 	{
 		HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, 0);
-
 	}
 
 	if(ask_learning_state == idle)	// Learn Procedure ...
@@ -212,37 +255,74 @@ void timer_Update()
 	if(htim14.Instance->CNT>150)
 	{
 		htim14.Instance->CNT=0;
-//		state_Of_Segment++;
 		timer++;
-//		button_Blinking=!button_Blinking;
-
-
-		if(ask_code_in_flash == (code[0] | (code[1] << 8) | (code[2] << 16)))
-		{
-//			if(!ask_read(&rf433, code, NULL, NULL))
-//			{
-//			segment_Update(1);
-			hold_timer_cnt++;
-			not_hold_timer_cnt = 0;
-//  			}
-//			code[0] = 0;
-//			code[1] = 0;
-//			code[2] = 0;
-		}
-		else
-		{
-			not_hold_timer_cnt++;
-			if(not_hold_timer_cnt >= 4)		// 4 ---> 4*150 = 0.6s
-			{
-				not_hold_timer_cnt = 0;
-				hold_timer_cnt = 0;
-			}
-		}
-//		code[0] = 0;
-//		code[1] = 0;
-//		code[2] = 0;
 	}
 }
+
+
+
+void check_a_hold_key()
+{
+    if(a_pressed == 1)
+    {
+        if((HAL_GetTick() - a_last) > 500)    // دکمه رها شد
+        {
+            a_pressed = 0;
+        }
+        else if(a_done == 0 && (HAL_GetTick() - a_start) >= 5000)    // 5 ثانیه
+        {
+            Test = 1;
+            a_done = 1;
+        }
+    }
+    else
+    {
+        a_done = 0;
+    }
+}
+
+void check_b_hold_key()
+{
+    if(b_pressed == 1)
+    {
+        if((HAL_GetTick() - b_last) > 500)
+        {
+            b_pressed = 0;
+        }
+        else if(b_done == 0 && (HAL_GetTick() - b_start) >= 5000)
+        {
+            Test_B = 1;    // اسم متغیرت را بگذار
+            b_done = 1;
+        }
+    }
+    else
+    {
+        b_done = 0;
+    }
+}
+
+void check_c_hold_key()
+{
+    if(c_pressed == 1)
+    {
+        if((HAL_GetTick() - c_last) > 500)
+        {
+            c_pressed = 0;
+        }
+        else if(c_done == 0 && (HAL_GetTick() - c_start) >= 5000)
+        {
+            Test_C = 1;    // اسم متغیرت را بگذار
+            c_done = 1;
+        }
+    }
+    else
+    {
+        c_done = 0;
+    }
+}
+
+
+
 
 //void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 //{
@@ -267,7 +347,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+   HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -291,7 +371,7 @@ int main(void)
   HAL_TIM_Base_Start(&htim14);
   HAL_TIM_Base_Start(&htim6);
   ask_init(&rf433,ASK_IN_SIG_GPIO_Port,ASK_IN_SIG_Pin);
-  Flash_Read_Data(0x08008000, &ask_code_in_flash, 1);
+  Flash_Read_Data(0x08007000, &ask_code_in_flash, 1);
 
   /* USER CODE END 2 */
 
@@ -304,16 +384,28 @@ int main(void)
 	  check_And_Learn_Ask();
 	  timer_Update();
 
-//	  if(HAL_GPIO_ReadPin(MCU_BTN_GPIO_Port, MCU_BTN_Pin) == 0)
-//		  HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, 1);
-//	  else
-//		  HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, 0);
+	      check_a_hold_key();
+	      check_b_hold_key();
+	      check_c_hold_key();
+
+	  if(Test == 1)
+	  {
+		  HAL_Delay(2000);
+		  Test = 0;
+	  }
+	  if(Test_B == 1)
+	  {
+		  HAL_Delay(2000);
+		  Test_B = 0;
+	  }
+	  if(Test_C == 1)
+	  {
+		  HAL_Delay(2000);
+		  Test_C = 0;
+	  }
 
 
 
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
