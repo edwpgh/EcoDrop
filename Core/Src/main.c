@@ -51,6 +51,7 @@ uint8_t code[5];
 uint8_t Test = 0; /////// For Debug
 
 typedef enum{
+	idle_before_Start,
 	waiting_For_Start,
 	button_Clicked,
 	playing_Game,
@@ -87,6 +88,27 @@ uint32_t b_start = 0, b_last = 0;
 
 uint8_t  c_pressed = 0, c_done = 0;
 uint32_t c_start = 0, c_last = 0;
+
+
+uint16_t MOSFET_PINS[10] =
+{
+    GPIO_PIN_15, // MOSFET 1
+    GPIO_PIN_3,  // MOSFET 2
+    GPIO_PIN_4,  // MOSFET 3
+    GPIO_PIN_5,  // MOSFET 4
+    GPIO_PIN_6,  // MOSFET 5
+    GPIO_PIN_8,  // MOSFET 6
+    GPIO_PIN_9,  // MOSFET 7
+    GPIO_PIN_13, // MOSFET 8
+    GPIO_PIN_14, // MOSFET 9
+    GPIO_PIN_15  // MOSFET 10
+};
+
+GPIO_TypeDef *MOSFET_PORTS[10] =
+{
+    GPIOA, GPIOB, GPIOB, GPIOB, GPIOB,
+    GPIOB, GPIOB, GPIOC, GPIOC, GPIOC
+};
 
 
 
@@ -265,11 +287,11 @@ void check_a_hold_key()
 {
     if(a_pressed == 1)
     {
-        if((HAL_GetTick() - a_last) > 500)    // دکمه رها شد
+        if((HAL_GetTick() - a_last) > 500)
         {
             a_pressed = 0;
         }
-        else if(a_done == 0 && (HAL_GetTick() - a_start) >= 5000)    // 5 ثانیه
+        else if(a_done == 0 && (HAL_GetTick() - a_start) >= 4800)
         {
             Test = 1;
             a_done = 1;
@@ -291,7 +313,7 @@ void check_b_hold_key()
         }
         else if(b_done == 0 && (HAL_GetTick() - b_start) >= 5000)
         {
-            Test_B = 1;    // اسم متغیرت را بگذار
+            Test_B = 1;
             b_done = 1;
         }
     }
@@ -311,7 +333,7 @@ void check_c_hold_key()
         }
         else if(c_done == 0 && (HAL_GetTick() - c_start) >= 5000)
         {
-            Test_C = 1;    // اسم متغیرت را بگذار
+            Test_C = 1;
             c_done = 1;
         }
     }
@@ -322,7 +344,63 @@ void check_c_hold_key()
 }
 
 
+void shuffle(uint8_t *array, uint8_t size)
+{
+	for (int i = size - 1; i > 0; i--) {
+		int j = rand() % (i + 1);
 
+		int temp = array[i];
+		array[i] = array[j];
+		array[j] = temp;
+	}
+}
+
+void MOSFET_Control(uint8_t number, uint8_t state)
+{
+    HAL_GPIO_WritePin(MOSFET_PORTS[number],MOSFET_PINS[number],state);
+}
+
+
+void ON_ALL_MOSFET(void)
+{
+
+	for(uint8_t i = 0; i < 10; i++)
+	    {
+	        MOSFET_Control(i, 1);
+	    }
+
+}
+void OFF_ALL_MOSFET(void)
+{
+	for(uint8_t i = 0; i < 10; i++)
+		    {
+		        MOSFET_Control(i, 0);
+		    }
+}
+
+
+void Random_Generate(uint8_t *array, uint8_t size)
+{
+    for (uint8_t i = 0; i < size; i++)
+    {
+        array[i] = i;
+    }
+
+    shuffle(array, size);
+}
+
+
+void Start_Game(void)
+{
+    uint8_t order[10];
+    Random_Generate(order, 10);
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        MOSFET_Control(order[i], GPIO_PIN_RESET);
+
+        HAL_Delay(1000);
+    }
+}
 
 //void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 //{
@@ -372,6 +450,7 @@ int main(void)
   HAL_TIM_Base_Start(&htim6);
   ask_init(&rf433,ASK_IN_SIG_GPIO_Port,ASK_IN_SIG_Pin);
   Flash_Read_Data(0x08007000, &ask_code_in_flash, 1);
+  game_State = idle_before_Start;
 
   /* USER CODE END 2 */
 
@@ -379,30 +458,40 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  HAL_GPIO_TogglePin(Mosfet_1_GPIO_Port, Mosfet_1_Pin);
-//	  HAL_Delay(100);
 	  check_And_Learn_Ask();
 	  timer_Update();
-
-	      check_a_hold_key();
-	      check_b_hold_key();
-	      check_c_hold_key();
-
-	  if(Test == 1)
+	  if(game_State == idle_before_Start)
 	  {
-		  HAL_Delay(2000);
+	  if(coin)
+	  {
+		 ON_ALL_MOSFET();
+		 game_State = waiting_For_Start;
+	  }
+	  if(!coin)
+		  OFF_ALL_MOSFET();
+	  }
+	  else if(game_State == waiting_For_Start)
+	  {
+		  check_a_hold_key();
+		  check_b_hold_key();
+		  check_c_hold_key();
+		  ON_ALL_MOSFET();
+		  if(Test == 1)
+		  {
+			  game_State = playing_Game;
+		  }
+
+	  }
+	  else if(game_State == playing_Game)
+	  {
+		  Start_Game();
+		  coin = 0;
 		  Test = 0;
+		  game_State = idle_before_Start;
+
 	  }
-	  if(Test_B == 1)
-	  {
-		  HAL_Delay(2000);
-		  Test_B = 0;
-	  }
-	  if(Test_C == 1)
-	  {
-		  HAL_Delay(2000);
-		  Test_C = 0;
-	  }
+
+
 
 
 
